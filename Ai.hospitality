@@ -1,0 +1,58 @@
+import streamlit as st
+import pandas as pd
+import numpy as np
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_absolute_error
+
+# Sample dataset for hotel pricing in Gachibowli, Hyderabad
+data = {
+    'date': pd.date_range(start='2023-01-01', periods=365, freq='D'),
+    'occupancy_rate': np.random.uniform(50, 100, 365),
+    'seasonal_factor': np.random.choice([0.8, 1, 1.2], 365),
+    'event_factor': np.random.choice([1, 1.5], 365),
+    'competitor_price': np.random.uniform(3000, 7000, 365),
+    'price': np.random.uniform(3500, 7500, 365)
+}
+df = pd.DataFrame(data)
+
+# Feature Engineering
+df['day_of_week'] = df['date'].dt.dayofweek
+df['month'] = df['date'].dt.month
+df = df.drop(columns=['date'])
+
+# Splitting data
+X = df.drop(columns=['price'])
+y = df['price']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Train AI Model
+model = RandomForestRegressor(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+# Evaluate model
+predictions = model.predict(X_test)
+mae = mean_absolute_error(y_test, predictions)
+
+# Streamlit App
+st.set_page_config(page_title="AI Hotel Pricing", layout="centered", initial_sidebar_state="collapsed")
+
+st.title("🏨 AI-Powered Hotel Pricing Predictor")
+st.write(f"📊 Model Performance: Mean Absolute Error: ₹{mae:.2f}")
+
+# Mobile-Friendly UI
+st.markdown("---")
+occupancy = st.slider("🔢 Occupancy Rate (%)", 50, 100, 75)
+seasonal_factor = st.selectbox("📅 Seasonal Factor", [0.8, 1, 1.2])
+event_factor = st.selectbox("🎉 Event Factor", [1, 1.5])
+competitor_price = st.slider("💰 Competitor Price (INR)", 3000, 7000, 5000)
+day_of_week = st.slider("📆 Day of the Week (0=Monday, 6=Sunday)", 0, 6, 3)
+month = st.slider("📅 Month (1-12)", 1, 12, 6)
+
+if st.button("📈 Predict Room Price"):
+    input_data = np.array([[occupancy, seasonal_factor, event_factor, competitor_price, day_of_week, month]])
+    predicted_price = model.predict(input_data)[0]
+    st.success(f"💵 Predicted Room Price: ₹{predicted_price:.2f}")
+
+st.markdown("---")
+st.caption("🔍 AI-driven predictions for smarter hotel pricing decisions.")
